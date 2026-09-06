@@ -18,6 +18,9 @@ export 'blocking/implementations/method_channel_app_blocker_service.dart';
 
 export 'config/rest_firebase_config.dart';
 
+export 'crash_reporting/crash_reporting_service.dart';
+export 'crash_reporting/implementations/firebase_crash_reporting_service.dart';
+
 export 'error/app_error.dart';
 export 'error/result.dart';
 
