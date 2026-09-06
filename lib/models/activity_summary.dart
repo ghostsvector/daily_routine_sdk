@@ -40,6 +40,8 @@ class ActivitySummary {
     required this.totalDurationMs,
     required this.entries,
     required this.eventCount,
+    this.tasksCompleted,
+    this.tasksScheduled,
     this.computedAt,
   });
 
@@ -51,6 +53,17 @@ class ActivitySummary {
   /// How many raw events were folded into this summary — a record of scale,
   /// not needed for anything functional.
   final int eventCount;
+
+  /// How many routine tasks were completed that day, out of [tasksScheduled]
+  /// (tasks whose repeat rule put them on that day's calendar). Null for
+  /// summaries computed before this field existed, or if task data wasn't
+  /// available when this summary was written — RoutineTask has no per-day
+  /// history of its own (isCompletedToday/completedDate only ever reflects
+  /// the most recent day it was toggled), so this is the only place that
+  /// count survives once the calendar moves past that day.
+  final int? tasksCompleted;
+  final int? tasksScheduled;
+
   final DateTime? computedAt;
 
   Map<String, dynamic> toJson() => {
@@ -58,6 +71,8 @@ class ActivitySummary {
     'totalDurationMs': totalDurationMs,
     'entries': entries.map((e) => e.toJson()).toList(),
     'eventCount': eventCount,
+    'tasksCompleted': tasksCompleted,
+    'tasksScheduled': tasksScheduled,
     'computedAt': (computedAt ?? DateTime.now()).toIso8601String(),
   };
 
@@ -68,6 +83,8 @@ class ActivitySummary {
         .map((e) => ActivitySummaryEntry.fromJson(e as Map<String, dynamic>))
         .toList(),
     eventCount: (json['eventCount'] as num?)?.toInt() ?? 0,
+    tasksCompleted: (json['tasksCompleted'] as num?)?.toInt(),
+    tasksScheduled: (json['tasksScheduled'] as num?)?.toInt(),
     computedAt: json['computedAt'] != null
         ? DateTime.tryParse(json['computedAt'] as String)
         : null,
