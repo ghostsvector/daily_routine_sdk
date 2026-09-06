@@ -6,8 +6,10 @@ name: Release
 # (git: {url: ..., ref: vX.Y.Z}) instead of floating on `main`.
 #
 # To cut a release: bump `version:` in pubspec.yaml, merge to main, then
-# push a matching tag:
-#   git tag v0.2.0 && git push origin v0.2.0
+# push a matching signed, annotated tag (`-s` requires git configured with
+# a signing key; a plain lightweight `git tag` is never GPG-signed even
+# with tag.gpgsign=true, so it won't show as Verified on GitHub):
+#   git tag -s -m v0.2.0 v0.2.0 && git push origin v0.2.0
 
 on:
   push:
@@ -70,6 +72,11 @@ jobs:
             --title "$GITHUB_REF_NAME" \
             --notes-file /tmp/release-notes.md
 
+      # Signs this bot commit with kasinadhsarma's commit-signing GPG key so
+      # it shows as Verified on GitHub, same as manually-pushed commits/tags.
+      - name: Import commit-signing GPG key
+        run: echo "${{ secrets.COMMIT_SIGNING_KEY }}" | gpg --batch --import
+
       # Prepends the same commit-history notes to a CHANGELOG.md committed
       # to the repo, so "what changed" is written once, automatically,
       # right here — not by hand in a commit message after the fact.
@@ -77,8 +84,10 @@ jobs:
         run: |
           DATE="$(date -u +%Y-%m-%d)"
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "kasinadhsarma"
+          git config user.email "218753575+kasinadhsarma@users.noreply.github.com"
+          git config user.signingkey "EFCAFE4A6CE496E560DB3BE8C467E1EB7AFCC640"
+          git config commit.gpgsign true
           git fetch origin main
           git checkout -B main origin/main
 
