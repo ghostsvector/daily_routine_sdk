@@ -1,3 +1,9 @@
+## v0.1.8 — 2026-09-06
+
+- Auto-generate CHANGELOG.md on every release
+- Bump version to 0.1.8 for release
+- Backfill CHANGELOG.md from commit history, fix release notes automation
+
 # Changelog
 
 Generated from git commit history between tags (`.github/workflows/release.yml`
