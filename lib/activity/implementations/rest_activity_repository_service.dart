@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:daily_routine_sdk/activity/activity_repository_service.dart';
@@ -11,6 +10,7 @@ import 'package:daily_routine_sdk/firestore_rest/firestore_rest_codec.dart';
 import 'package:daily_routine_sdk/models/app_usage_event.dart';
 import 'package:daily_routine_sdk/models/activity_event.dart';
 import 'package:daily_routine_sdk/models/activity_summary.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:http/http.dart' as http;
 
 /// [ActivityRepositoryService] backed directly by the Firestore REST API v1,
@@ -127,14 +127,10 @@ class RestActivityRepositoryService implements ActivityRepositoryService {
           'orderBy': 'startedAt desc',
         },
       );
-      developer.log('Polling users/$uid/activity (pageSize=$limit)', name: _logName);
+      debugPrint('[$_logName] Polling users/$uid/activity (pageSize=$limit)');
       final response = await _client.get(uri, headers: await _headers());
       if (response.statusCode != 200) {
-        developer.log(
-          'Poll failed: ${response.statusCode} ${response.body}',
-          name: _logName,
-          level: 900,
-        );
+        debugPrint('[$_logName] Poll failed: ${response.statusCode} ${response.body}');
         controller.addError(
           StateError(
             'Firestore REST watchRecentActivity failed: ${response.statusCode} ${response.body}',
@@ -144,7 +140,7 @@ class RestActivityRepositoryService implements ActivityRepositoryService {
       }
       final body = jsonDecode(response.body) as Map<String, dynamic>;
       final docs = body['documents'] as List<dynamic>? ?? const [];
-      developer.log('Fetched ${docs.length} activity doc(s)', name: _logName);
+      debugPrint('[$_logName] Fetched ${docs.length} activity doc(s)');
       final events = docs.map((doc) {
         final map = doc as Map<String, dynamic>;
         final id = (map['name'] as String).split('/').last;
@@ -158,7 +154,7 @@ class RestActivityRepositoryService implements ActivityRepositoryService {
         });
       controller.add(events.take(limit).toList());
     } catch (e, stackTrace) {
-      developer.log('Poll threw', name: _logName, level: 1000, error: e, stackTrace: stackTrace);
+      debugPrint('[$_logName] Poll threw: $e');
       controller.addError(e, stackTrace);
     }
   }
@@ -192,7 +188,7 @@ class RestActivityRepositoryService implements ActivityRepositoryService {
         );
         pageToken = body['nextPageToken'] as String?;
       } while (pageToken != null);
-      developer.log('fetchAllEvents: ${events.length} doc(s)', name: _logName);
+      debugPrint('[$_logName] fetchAllEvents: ${events.length} doc(s)');
       return Result.success(events);
     } catch (e, stackTrace) {
       return Result.failure(
@@ -221,7 +217,7 @@ class RestActivityRepositoryService implements ActivityRepositoryService {
           ),
         );
       }
-      developer.log('Deleted ${eventIds.length} event doc(s)', name: _logName);
+      debugPrint('[$_logName] Deleted ${eventIds.length} event doc(s)');
       return const Result.success(null);
     } catch (e, stackTrace) {
       return Result.failure(
