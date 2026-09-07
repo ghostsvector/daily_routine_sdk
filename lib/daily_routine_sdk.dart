@@ -39,6 +39,8 @@ export 'notifications/notification_service.dart';
 export 'routines/implementations/firestore_routine_repository_service.dart';
 export 'routines/routine_repository_service.dart';
 
+export 'security/totp_service.dart';
+
 export 'usage/app_usage_tracker_service.dart';
 export 'usage/implementations/desktop_app_usage_tracker_service.dart';
 export 'usage/implementations/method_channel_app_usage_tracker_service.dart';
