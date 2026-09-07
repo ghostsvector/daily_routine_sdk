@@ -1,3 +1,9 @@
+## v0.1.9 — 2026-09-07
+
+- Update CHANGELOG.md for v0.1.8 [skip ci]
+- Sign CI's automated CHANGELOG commits with a dedicated commit-signing key
+- Add RFC 6238 TOTP service for app-level 2FA
+
 ## v0.1.8 — 2026-09-06
 
 - Auto-generate CHANGELOG.md on every release
