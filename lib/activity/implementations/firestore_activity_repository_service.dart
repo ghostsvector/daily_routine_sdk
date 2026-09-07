@@ -8,6 +8,7 @@ import 'package:daily_routine_sdk/error/result.dart';
 import 'package:daily_routine_sdk/models/app_usage_event.dart';
 import 'package:daily_routine_sdk/models/activity_event.dart';
 import 'package:daily_routine_sdk/models/activity_summary.dart';
+import 'package:daily_routine_sdk/security/app_check_http_client.dart';
 import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, kIsWeb;
 
 /// [ActivityRepositoryService] backed by Firestore — or, on platforms with
@@ -18,7 +19,9 @@ import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatf
 class FirestoreActivityRepositoryService implements ActivityRepositoryService {
   factory FirestoreActivityRepositoryService({FirebaseFirestore? firestore}) {
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.linux) {
-      return FirestoreActivityRepositoryService._(RestActivityRepositoryService());
+      return FirestoreActivityRepositoryService._(
+        RestActivityRepositoryService(client: AppCheckHttpClient()),
+      );
     }
     return FirestoreActivityRepositoryService._(
       _NativeFirestoreActivityRepositoryService(firestore: firestore),

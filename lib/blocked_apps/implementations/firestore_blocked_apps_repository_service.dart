@@ -4,6 +4,7 @@ import 'package:daily_routine_sdk/blocked_apps/implementations/rest_blocked_apps
 import 'package:daily_routine_sdk/error/app_error.dart';
 import 'package:daily_routine_sdk/error/result.dart';
 import 'package:daily_routine_sdk/models/blocked_app.dart';
+import 'package:daily_routine_sdk/security/app_check_http_client.dart';
 import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, kIsWeb;
 
 /// [BlockedAppsRepositoryService] backed by Firestore — or, on platforms
@@ -14,7 +15,9 @@ class FirestoreBlockedAppsRepositoryService
     implements BlockedAppsRepositoryService {
   factory FirestoreBlockedAppsRepositoryService({FirebaseFirestore? firestore}) {
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.linux) {
-      return FirestoreBlockedAppsRepositoryService._(RestBlockedAppsRepositoryService());
+      return FirestoreBlockedAppsRepositoryService._(
+        RestBlockedAppsRepositoryService(client: AppCheckHttpClient()),
+      );
     }
     return FirestoreBlockedAppsRepositoryService._(
       _NativeFirestoreBlockedAppsRepositoryService(firestore: firestore),

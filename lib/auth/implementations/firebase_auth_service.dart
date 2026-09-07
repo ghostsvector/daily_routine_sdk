@@ -3,6 +3,7 @@ import 'package:daily_routine_sdk/auth/implementations/rest_auth_service.dart';
 import 'package:daily_routine_sdk/error/app_error.dart';
 import 'package:daily_routine_sdk/error/result.dart';
 import 'package:daily_routine_sdk/models/app_user.dart';
+import 'package:daily_routine_sdk/security/app_check_http_client.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, kIsWeb;
 
@@ -13,7 +14,7 @@ import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatf
 class FirebaseAuthService implements AuthService {
   factory FirebaseAuthService({fb.FirebaseAuth? firebaseAuth}) {
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.linux) {
-      return FirebaseAuthService._(RestAuthService());
+      return FirebaseAuthService._(RestAuthService(client: AppCheckHttpClient()));
     }
     return FirebaseAuthService._(_NativeFirebaseAuthService(firebaseAuth: firebaseAuth));
   }

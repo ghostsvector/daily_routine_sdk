@@ -4,6 +4,7 @@ import 'package:daily_routine_sdk/error/result.dart';
 import 'package:daily_routine_sdk/models/routine_task.dart';
 import 'package:daily_routine_sdk/routines/implementations/rest_routine_repository_service.dart';
 import 'package:daily_routine_sdk/routines/routine_repository_service.dart';
+import 'package:daily_routine_sdk/security/app_check_http_client.dart';
 import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, kIsWeb;
 
 /// [RoutineRepositoryService] backed by Firestore — or, on platforms with
@@ -13,7 +14,9 @@ import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatf
 class FirestoreRoutineRepositoryService implements RoutineRepositoryService {
   factory FirestoreRoutineRepositoryService({FirebaseFirestore? firestore}) {
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.linux) {
-      return FirestoreRoutineRepositoryService._(RestRoutineRepositoryService());
+      return FirestoreRoutineRepositoryService._(
+        RestRoutineRepositoryService(client: AppCheckHttpClient()),
+      );
     }
     return FirestoreRoutineRepositoryService._(
       _NativeFirestoreRoutineRepositoryService(firestore: firestore),
