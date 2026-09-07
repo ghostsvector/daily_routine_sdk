@@ -1,3 +1,8 @@
+## v0.1.10 — 2026-09-07
+
+- Update CHANGELOG.md for v0.1.9 [skip ci]
+- Wire App Check debug tokens into every REST Firestore/Auth call
+
 ## v0.1.9 — 2026-09-07
 
 - Update CHANGELOG.md for v0.1.8 [skip ci]
