@@ -1,3 +1,8 @@
+## v0.1.11 — 2026-09-08
+
+- Update CHANGELOG.md for v0.1.10 [skip ci]
+- Add caching to the REST/Linux data path: instant last-known data + refresh-on-write
+
 ## v0.1.10 — 2026-09-07
 
 - Update CHANGELOG.md for v0.1.9 [skip ci]
