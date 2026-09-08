@@ -28,6 +28,10 @@ class RestBlockedAppsRepositoryService implements BlockedAppsRepositoryService {
 
   final Map<String, StreamController<List<BlockedApp>>> _watchControllers = {};
   final Map<String, Timer> _pollTimers = {};
+  // See RestRoutineRepositoryService's identical field for why this exists:
+  // instant last-known data for a re-subscribing (e.g. autoDispose-torn-down)
+  // listener instead of a wait up to pollInterval long.
+  final Map<String, List<BlockedApp>> _lastKnown = {};
 
   String _baseUrl(String uid) =>
       'https://firestore.googleapis.com/v1/projects/'
@@ -50,6 +54,8 @@ class RestBlockedAppsRepositoryService implements BlockedAppsRepositoryService {
     late final StreamController<List<BlockedApp>> controller;
     controller = StreamController<List<BlockedApp>>.broadcast(
       onListen: () {
+        final cached = _lastKnown[uid];
+        if (cached != null) controller.add(cached);
         _pollTimers[uid] ??= Timer.periodic(pollInterval, (_) => _pollOnce(uid));
         unawaited(_pollOnce(uid));
       },
@@ -60,6 +66,11 @@ class RestBlockedAppsRepositoryService implements BlockedAppsRepositoryService {
     );
     _watchControllers[uid] = controller;
     return controller.stream;
+  }
+
+  /// See RestRoutineRepositoryService's identical method.
+  void _refreshNow(String uid) {
+    if (_watchControllers.containsKey(uid)) unawaited(_pollOnce(uid));
   }
 
   Future<void> _pollOnce(String uid) async {
@@ -83,11 +94,11 @@ class RestBlockedAppsRepositoryService implements BlockedAppsRepositoryService {
       final body = jsonDecode(response.body) as Map<String, dynamic>;
       final docs = body['documents'] as List<dynamic>? ?? const [];
       debugPrint('[$_logName] Fetched ${docs.length} blocked-app doc(s)');
-      controller.add(
-        docs
-            .map((doc) => BlockedApp.fromJson(decodeFirestoreFields(doc as Map<String, dynamic>)))
-            .toList(),
-      );
+      final apps = docs
+          .map((doc) => BlockedApp.fromJson(decodeFirestoreFields(doc as Map<String, dynamic>)))
+          .toList();
+      _lastKnown[uid] = apps;
+      controller.add(apps);
     } catch (e, stackTrace) {
       debugPrint('[$_logName] Poll threw: $e');
       controller.addError(e, stackTrace);
@@ -111,6 +122,7 @@ class RestBlockedAppsRepositoryService implements BlockedAppsRepositoryService {
           );
         }
       }
+      _refreshNow(uid);
       return const Result.success(null);
     } catch (e, stackTrace) {
       return Result.failure(
@@ -135,6 +147,7 @@ class RestBlockedAppsRepositoryService implements BlockedAppsRepositoryService {
           ),
         );
       }
+      _refreshNow(uid);
       return const Result.success(null);
     } catch (e, stackTrace) {
       return Result.failure(

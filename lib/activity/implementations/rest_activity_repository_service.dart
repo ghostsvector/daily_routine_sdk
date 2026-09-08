@@ -32,6 +32,12 @@ class RestActivityRepositoryService implements ActivityRepositoryService {
   final Map<String, StreamController<List<ActivityEvent>>> _watchControllers = {};
   final Map<String, Timer> _pollTimers = {};
   final Map<String, int> _limits = {};
+  // See RestRoutineRepositoryService's identical field. No refresh-on-write
+  // here deliberately: logAppUsage/deleteEvents fire from background
+  // tracking and rollover, not a user action waiting on immediate visual
+  // feedback — forcing an extra poll on every call would work against the
+  // exact read-volume concern documented in _pollOnce below.
+  final Map<String, List<ActivityEvent>> _lastKnown = {};
 
   String get _projectRoot =>
       'https://firestore.googleapis.com/v1/projects/'
@@ -95,6 +101,8 @@ class RestActivityRepositoryService implements ActivityRepositoryService {
     late final StreamController<List<ActivityEvent>> controller;
     controller = StreamController<List<ActivityEvent>>.broadcast(
       onListen: () {
+        final cached = _lastKnown[uid];
+        if (cached != null) controller.add(cached);
         _pollTimers[uid] ??= Timer.periodic(pollInterval, (_) => _pollOnce(uid));
         unawaited(_pollOnce(uid));
       },
@@ -152,7 +160,9 @@ class RestActivityRepositoryService implements ActivityRepositoryService {
           if (aTime == null || bTime == null) return 0;
           return bTime.compareTo(aTime);
         });
-      controller.add(events.take(limit).toList());
+      final limited = events.take(limit).toList();
+      _lastKnown[uid] = limited;
+      controller.add(limited);
     } catch (e, stackTrace) {
       debugPrint('[$_logName] Poll threw: $e');
       controller.addError(e, stackTrace);

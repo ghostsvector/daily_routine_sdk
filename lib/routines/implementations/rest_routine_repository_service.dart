@@ -37,6 +37,14 @@ class RestRoutineRepositoryService implements RoutineRepositoryService {
 
   final Map<String, StreamController<List<RoutineTask>>> _watchControllers = {};
   final Map<String, Timer> _pollTimers = {};
+  // Last successfully polled result per uid, kept around after the
+  // controller itself is torn down (e.g. a `.autoDispose` Riverpod
+  // provider losing its last listener when a screen closes). Riverpod
+  // re-subscribing when the screen reopens would otherwise show nothing
+  // for up to `pollInterval` while the first poll completes — this
+  // caches so it shows the last-known list instantly instead, alongside
+  // the fresh poll running in the background to reconcile it.
+  final Map<String, List<RoutineTask>> _lastKnown = {};
 
   String _baseUrl(String uid) =>
       'https://firestore.googleapis.com/v1/projects/'
@@ -59,6 +67,8 @@ class RestRoutineRepositoryService implements RoutineRepositoryService {
     late final StreamController<List<RoutineTask>> controller;
     controller = StreamController<List<RoutineTask>>.broadcast(
       onListen: () {
+        final cached = _lastKnown[uid];
+        if (cached != null) controller.add(cached);
         _pollTimers[uid] ??= Timer.periodic(pollInterval, (_) => _pollOnce(uid));
         unawaited(_pollOnce(uid));
       },
@@ -69,6 +79,13 @@ class RestRoutineRepositoryService implements RoutineRepositoryService {
     );
     _watchControllers[uid] = controller;
     return controller.stream;
+  }
+
+  /// Triggers an out-of-band poll right now instead of waiting for the
+  /// next scheduled tick — called after a write so its own effect is
+  /// visible immediately rather than up to `pollInterval` later.
+  void _refreshNow(String uid) {
+    if (_watchControllers.containsKey(uid)) unawaited(_pollOnce(uid));
   }
 
   Future<void> _pollOnce(String uid) async {
@@ -95,6 +112,7 @@ class RestRoutineRepositoryService implements RoutineRepositoryService {
         final id = (map['name'] as String).split('/').last;
         return RoutineTask.fromJson({...decodeFirestoreFields(map), 'id': id});
       }).toList()..sort((a, b) => a.startMinuteOfDay.compareTo(b.startMinuteOfDay));
+      _lastKnown[uid] = tasks;
       controller.add(tasks);
     } catch (e, stackTrace) {
       debugPrint('[$_logName] Poll threw: $e');
@@ -119,6 +137,7 @@ class RestRoutineRepositoryService implements RoutineRepositoryService {
           DatabaseError('Firestore REST upsertTask failed: ${response.statusCode} ${response.body}'),
         );
       }
+      _refreshNow(uid);
       return const Result.success(null);
     } catch (e, stackTrace) {
       return Result.failure(
@@ -141,6 +160,7 @@ class RestRoutineRepositoryService implements RoutineRepositoryService {
           DatabaseError('Firestore REST deleteTask failed: ${response.statusCode} ${response.body}'),
         );
       }
+      _refreshNow(uid);
       return const Result.success(null);
     } catch (e, stackTrace) {
       return Result.failure(
@@ -178,6 +198,7 @@ class RestRoutineRepositoryService implements RoutineRepositoryService {
           ),
         );
       }
+      _refreshNow(uid);
       return const Result.success(null);
     } catch (e, stackTrace) {
       return Result.failure(
