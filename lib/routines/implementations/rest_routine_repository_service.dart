@@ -17,33 +17,28 @@ import 'package:http/http.dart' as http;
 ///
 /// [watchTasks] has no true push channel available over plain REST —
 /// Firestore's real-time Listen API is a bidirectional gRPC/HTTP2 stream,
-/// not reasonably implementable with `package:http`. This polls on an
-/// interval instead: a disclosed, deliberate degradation (near-live, not
-/// push). The 3-minute default (not, say, 10s) matters more than it looks —
-/// this has no server-side limit (every poll re-fetches the whole
-/// `tasks` collection), so read cost scales directly with how often it
-/// polls; too short an interval burns through Firestore's free-tier daily
-/// read quota even for a small task list, simply by running for 24h.
+/// not reasonably implementable with `package:http`. No background polling
+/// either: this fetches once per [watchTasks] subscription (see
+/// [_refreshNow] for how a write still shows up immediately) rather than on
+/// a repeating timer — a timer here re-fetches the whole `tasks` collection
+/// on every tick with no server-side limit, so it burns through Firestore's
+/// free-tier daily read quota simply by running for 24h, independent of how
+/// small the task list is.
 class RestRoutineRepositoryService implements RoutineRepositoryService {
-  RestRoutineRepositoryService({
-    http.Client? client,
-    this.pollInterval = const Duration(minutes: 3),
-  }) : _client = client ?? http.Client();
+  RestRoutineRepositoryService({http.Client? client})
+    : _client = client ?? http.Client();
 
   static const _logName = 'RestRoutineRepositoryService';
 
   final http.Client _client;
-  final Duration pollInterval;
 
   final Map<String, StreamController<List<RoutineTask>>> _watchControllers = {};
-  final Map<String, Timer> _pollTimers = {};
   // Last successfully polled result per uid, kept around after the
   // controller itself is torn down (e.g. a `.autoDispose` Riverpod
   // provider losing its last listener when a screen closes). Riverpod
   // re-subscribing when the screen reopens would otherwise show nothing
-  // for up to `pollInterval` while the first poll completes — this
-  // caches so it shows the last-known list instantly instead, alongside
-  // the fresh poll running in the background to reconcile it.
+  // while the fresh poll that subscription triggers is still in flight —
+  // this caches so it shows the last-known list instantly instead.
   final Map<String, List<RoutineTask>> _lastKnown = {};
 
   String _baseUrl(String uid) =>
@@ -69,11 +64,9 @@ class RestRoutineRepositoryService implements RoutineRepositoryService {
       onListen: () {
         final cached = _lastKnown[uid];
         if (cached != null) controller.add(cached);
-        _pollTimers[uid] ??= Timer.periodic(pollInterval, (_) => _pollOnce(uid));
         unawaited(_pollOnce(uid));
       },
       onCancel: () {
-        _pollTimers.remove(uid)?.cancel();
         _watchControllers.remove(uid);
       },
     );

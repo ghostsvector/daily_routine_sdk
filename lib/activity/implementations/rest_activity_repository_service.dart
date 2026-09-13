@@ -16,21 +16,20 @@ import 'package:http/http.dart' as http;
 /// [ActivityRepositoryService] backed directly by the Firestore REST API v1,
 /// for platforms with no native `cloud_firestore` plugin implementation
 /// (Linux desktop — see `FirestoreActivityRepositoryService`, which
-/// dispatches to this on Linux). Polls on an interval instead of a true
-/// push channel — see `RestRoutineRepositoryService`'s doc comment.
+/// dispatches to this on Linux). No background polling: [watchRecentActivity]
+/// fetches once when first listened (and again if re-listened after a prior
+/// listener cancelled), rather than on a repeating timer — see
+/// `RestRoutineRepositoryService`'s doc comment for why a timer was there in
+/// the first place and why it's deliberately gone now.
 class RestActivityRepositoryService implements ActivityRepositoryService {
-  RestActivityRepositoryService({
-    http.Client? client,
-    this.pollInterval = const Duration(minutes: 3),
-  }) : _client = client ?? http.Client();
+  RestActivityRepositoryService({http.Client? client})
+    : _client = client ?? http.Client();
 
   final http.Client _client;
-  final Duration pollInterval;
 
   static const _logName = 'RestActivityRepositoryService';
 
   final Map<String, StreamController<List<ActivityEvent>>> _watchControllers = {};
-  final Map<String, Timer> _pollTimers = {};
   final Map<String, int> _limits = {};
   // See RestRoutineRepositoryService's identical field. No refresh-on-write
   // here deliberately: logAppUsage/deleteEvents fire from background
@@ -103,11 +102,9 @@ class RestActivityRepositoryService implements ActivityRepositoryService {
       onListen: () {
         final cached = _lastKnown[uid];
         if (cached != null) controller.add(cached);
-        _pollTimers[uid] ??= Timer.periodic(pollInterval, (_) => _pollOnce(uid));
         unawaited(_pollOnce(uid));
       },
       onCancel: () {
-        _pollTimers.remove(uid)?.cancel();
         _watchControllers.remove(uid);
         _limits.remove(uid);
       },

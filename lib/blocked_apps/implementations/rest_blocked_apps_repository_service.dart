@@ -13,24 +13,20 @@ import 'package:http/http.dart' as http;
 /// [BlockedAppsRepositoryService] backed directly by the Firestore REST API
 /// v1, for platforms with no native `cloud_firestore` plugin implementation
 /// (Linux desktop — see `FirestoreBlockedAppsRepositoryService`, which
-/// dispatches to this on Linux). Polls on an interval instead of a true
-/// push channel — see `RestRoutineRepositoryService`'s doc comment.
+/// dispatches to this on Linux). No background polling — see
+/// `RestRoutineRepositoryService`'s doc comment for why.
 class RestBlockedAppsRepositoryService implements BlockedAppsRepositoryService {
-  RestBlockedAppsRepositoryService({
-    http.Client? client,
-    this.pollInterval = const Duration(minutes: 5),
-  }) : _client = client ?? http.Client();
+  RestBlockedAppsRepositoryService({http.Client? client})
+    : _client = client ?? http.Client();
 
   static const _logName = 'RestBlockedAppsRepositoryService';
 
   final http.Client _client;
-  final Duration pollInterval;
 
   final Map<String, StreamController<List<BlockedApp>>> _watchControllers = {};
-  final Map<String, Timer> _pollTimers = {};
   // See RestRoutineRepositoryService's identical field for why this exists:
   // instant last-known data for a re-subscribing (e.g. autoDispose-torn-down)
-  // listener instead of a wait up to pollInterval long.
+  // listener instead of a wait for the fresh poll to complete.
   final Map<String, List<BlockedApp>> _lastKnown = {};
 
   String _baseUrl(String uid) =>
@@ -56,11 +52,9 @@ class RestBlockedAppsRepositoryService implements BlockedAppsRepositoryService {
       onListen: () {
         final cached = _lastKnown[uid];
         if (cached != null) controller.add(cached);
-        _pollTimers[uid] ??= Timer.periodic(pollInterval, (_) => _pollOnce(uid));
         unawaited(_pollOnce(uid));
       },
       onCancel: () {
-        _pollTimers.remove(uid)?.cancel();
         _watchControllers.remove(uid);
       },
     );
