@@ -19,7 +19,7 @@ import 'package:http/http.dart' as http;
 /// Firestore's real-time Listen API is a bidirectional gRPC/HTTP2 stream,
 /// not reasonably implementable with `package:http`. This polls on an
 /// interval instead: a disclosed, deliberate degradation (near-live, not
-/// push). The 60s default (not, say, 10s) matters more than it looks —
+/// push). The 3-minute default (not, say, 10s) matters more than it looks —
 /// this has no server-side limit (every poll re-fetches the whole
 /// `tasks` collection), so read cost scales directly with how often it
 /// polls; too short an interval burns through Firestore's free-tier daily
@@ -27,7 +27,7 @@ import 'package:http/http.dart' as http;
 class RestRoutineRepositoryService implements RoutineRepositoryService {
   RestRoutineRepositoryService({
     http.Client? client,
-    this.pollInterval = const Duration(seconds: 60),
+    this.pollInterval = const Duration(minutes: 3),
   }) : _client = client ?? http.Client();
 
   static const _logName = 'RestRoutineRepositoryService';

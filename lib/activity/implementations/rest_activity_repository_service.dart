@@ -21,7 +21,7 @@ import 'package:http/http.dart' as http;
 class RestActivityRepositoryService implements ActivityRepositoryService {
   RestActivityRepositoryService({
     http.Client? client,
-    this.pollInterval = const Duration(seconds: 30),
+    this.pollInterval = const Duration(minutes: 3),
   }) : _client = client ?? http.Client();
 
   final http.Client _client;

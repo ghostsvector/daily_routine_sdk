@@ -18,7 +18,7 @@ import 'package:http/http.dart' as http;
 class RestBlockedAppsRepositoryService implements BlockedAppsRepositoryService {
   RestBlockedAppsRepositoryService({
     http.Client? client,
-    this.pollInterval = const Duration(seconds: 60),
+    this.pollInterval = const Duration(minutes: 5),
   }) : _client = client ?? http.Client();
 
   static const _logName = 'RestBlockedAppsRepositoryService';
