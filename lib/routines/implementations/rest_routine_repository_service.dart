@@ -75,9 +75,9 @@ class RestRoutineRepositoryService implements RoutineRepositoryService {
     return controller.stream;
   }
 
-  /// Triggers an out-of-band poll right now instead of waiting for the
-  /// next scheduled tick — called after a write so its own effect is
-  /// visible immediately rather than up to `pollInterval` later.
+  /// Triggers an out-of-band poll right now — called after a write so its
+  /// own effect is visible immediately rather than waiting for the next
+  /// [watchTasks] subscription.
   void _refreshNow(String uid) {
     if (_watchControllers.containsKey(uid)) unawaited(_pollOnce(uid));
   }
