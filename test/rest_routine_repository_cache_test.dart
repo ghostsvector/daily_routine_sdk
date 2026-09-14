@@ -33,10 +33,7 @@ void main() {
       );
     });
 
-    final service = RestRoutineRepositoryService(
-      client: mock,
-      pollInterval: const Duration(minutes: 10), // long enough it won't fire during the test
-    );
+    final service = RestRoutineRepositoryService(client: mock);
 
     final first = await service.watchTasks('u').first;
     expect(first, hasLength(1));
@@ -68,10 +65,7 @@ void main() {
       );
     });
 
-    final service = RestRoutineRepositoryService(
-      client: mock,
-      pollInterval: const Duration(minutes: 10),
-    );
+    final service = RestRoutineRepositoryService(client: mock);
 
     final events = <List<RoutineTask>>[];
     final sub = service.watchTasks('u').listen(events.add);
