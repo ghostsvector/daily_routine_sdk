@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:daily_routine_sdk/activity/activity_repository_service.dart';
 import 'package:daily_routine_sdk/config/rest_firebase_config.dart';
 import 'package:daily_routine_sdk/error/app_error.dart';
+import 'package:daily_routine_sdk/error/error_classification.dart';
 import 'package:daily_routine_sdk/error/result.dart';
 import 'package:daily_routine_sdk/firestore_rest/firestore_rest_codec.dart';
 import 'package:daily_routine_sdk/models/app_usage_event.dart';
@@ -76,8 +77,10 @@ class RestActivityRepositoryService implements ActivityRepositoryService {
       );
       if (response.statusCode < 200 || response.statusCode >= 300) {
         return Result.failure(
-          DatabaseError(
-            'Firestore REST logAppUsage failed: ${response.statusCode} ${response.body}',
+          classifyFirestoreRestError(
+            response.statusCode,
+            response.body,
+            operation: 'logAppUsage',
           ),
         );
       }
@@ -137,8 +140,10 @@ class RestActivityRepositoryService implements ActivityRepositoryService {
       if (response.statusCode != 200) {
         debugPrint('[$_logName] Poll failed: ${response.statusCode} ${response.body}');
         controller.addError(
-          StateError(
-            'Firestore REST watchRecentActivity failed: ${response.statusCode} ${response.body}',
+          classifyFirestoreRestError(
+            response.statusCode,
+            response.body,
+            operation: 'watchRecentActivity',
           ),
         );
         return;
@@ -179,10 +184,12 @@ class RestActivityRepositoryService implements ActivityRepositoryService {
         final response = await _client.get(uri, headers: await _headers());
         if (response.statusCode != 200) {
           return Result.failure(
-            DatabaseError(
-              'Firestore REST fetchAllEvents failed: ${response.statusCode} ${response.body}',
-            ),
-          );
+          classifyFirestoreRestError(
+            response.statusCode,
+            response.body,
+            operation: 'fetchAllEvents',
+          ),
+        );
         }
         final body = jsonDecode(response.body) as Map<String, dynamic>;
         final docs = body['documents'] as List<dynamic>? ?? const [];
@@ -243,8 +250,10 @@ class RestActivityRepositoryService implements ActivityRepositoryService {
       );
       if (response.statusCode < 200 || response.statusCode >= 300) {
         return Result.failure(
-          DatabaseError(
-            'Firestore REST saveDailySummary failed: ${response.statusCode} ${response.body}',
+          classifyFirestoreRestError(
+            response.statusCode,
+            response.body,
+            operation: 'saveDailySummary',
           ),
         );
       }
@@ -266,8 +275,10 @@ class RestActivityRepositoryService implements ActivityRepositoryService {
       if (response.statusCode == 404) return const Result.success(null);
       if (response.statusCode != 200) {
         return Result.failure(
-          DatabaseError(
-            'Firestore REST getDailySummary failed: ${response.statusCode} ${response.body}',
+          classifyFirestoreRestError(
+            response.statusCode,
+            response.body,
+            operation: 'getDailySummary',
           ),
         );
       }
@@ -290,8 +301,10 @@ class RestActivityRepositoryService implements ActivityRepositoryService {
       if (response.statusCode == 404) return const Result.success(null);
       if (response.statusCode != 200) {
         return Result.failure(
-          DatabaseError(
-            'Firestore REST getLastRolloverDate failed: ${response.statusCode} ${response.body}',
+          classifyFirestoreRestError(
+            response.statusCode,
+            response.body,
+            operation: 'getLastRolloverDate',
           ),
         );
       }
@@ -317,8 +330,10 @@ class RestActivityRepositoryService implements ActivityRepositoryService {
       );
       if (response.statusCode < 200 || response.statusCode >= 300) {
         return Result.failure(
-          DatabaseError(
-            'Firestore REST setLastRolloverDate failed: ${response.statusCode} ${response.body}',
+          classifyFirestoreRestError(
+            response.statusCode,
+            response.body,
+            operation: 'setLastRolloverDate',
           ),
         );
       }

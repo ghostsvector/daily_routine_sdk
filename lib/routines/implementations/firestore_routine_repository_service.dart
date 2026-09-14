@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:daily_routine_sdk/error/app_error.dart';
+import 'package:daily_routine_sdk/error/error_classification.dart';
 import 'package:daily_routine_sdk/error/result.dart';
 import 'package:daily_routine_sdk/models/routine_task.dart';
 import 'package:daily_routine_sdk/routines/implementations/rest_routine_repository_service.dart';
@@ -97,7 +98,13 @@ class _NativeFirestoreRoutineRepositoryService implements RoutineRepositoryServi
       return const Result.success(null);
     } on FirebaseException catch (e, st) {
       return Result.failure(
-        DatabaseError(e.message ?? 'Database operation failed.', cause: e, stackTrace: st),
+        classifyFirebaseExceptionCode(
+          e.code,
+          e.message,
+          operation: 'routineTask',
+          cause: e,
+          stackTrace: st,
+        ),
       );
     } catch (e, st) {
       return Result.failure(

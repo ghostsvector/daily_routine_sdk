@@ -22,6 +22,7 @@ export 'crash_reporting/crash_reporting_service.dart';
 export 'crash_reporting/implementations/firebase_crash_reporting_service.dart';
 
 export 'error/app_error.dart';
+export 'error/error_classification.dart';
 export 'error/result.dart';
 
 export 'models/activity_event.dart';

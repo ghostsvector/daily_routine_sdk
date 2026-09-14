@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:daily_routine_sdk/activity/activity_repository_service.dart';
 import 'package:daily_routine_sdk/activity/implementations/rest_activity_repository_service.dart';
 import 'package:daily_routine_sdk/error/app_error.dart';
+import 'package:daily_routine_sdk/error/error_classification.dart';
 import 'package:daily_routine_sdk/error/result.dart';
 import 'package:daily_routine_sdk/models/app_usage_event.dart';
 import 'package:daily_routine_sdk/models/activity_event.dart';
@@ -162,7 +163,13 @@ class _NativeFirestoreActivityRepositoryService implements ActivityRepositorySer
       return Result.success(await action());
     } on FirebaseException catch (e, st) {
       return Result.failure(
-        DatabaseError(e.message ?? 'Database operation failed.', cause: e, stackTrace: st),
+        classifyFirebaseExceptionCode(
+          e.code,
+          e.message,
+          operation: 'activity',
+          cause: e,
+          stackTrace: st,
+        ),
       );
     } catch (e, st) {
       return Result.failure(

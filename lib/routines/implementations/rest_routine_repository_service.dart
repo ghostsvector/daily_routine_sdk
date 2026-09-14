@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:daily_routine_sdk/config/rest_firebase_config.dart';
 import 'package:daily_routine_sdk/error/app_error.dart';
+import 'package:daily_routine_sdk/error/error_classification.dart';
 import 'package:daily_routine_sdk/error/result.dart';
 import 'package:daily_routine_sdk/firestore_rest/firestore_rest_codec.dart';
 import 'package:daily_routine_sdk/models/routine_task.dart';
@@ -93,7 +94,11 @@ class RestRoutineRepositoryService implements RoutineRepositoryService {
       if (response.statusCode != 200) {
         debugPrint('[$_logName] Poll failed: ${response.statusCode} ${response.body}');
         controller.addError(
-          StateError('Firestore REST watchTasks failed: ${response.statusCode} ${response.body}'),
+          classifyFirestoreRestError(
+            response.statusCode,
+            response.body,
+            operation: 'watchTasks',
+          ),
         );
         return;
       }
@@ -127,7 +132,11 @@ class RestRoutineRepositoryService implements RoutineRepositoryService {
       );
       if (response.statusCode < 200 || response.statusCode >= 300) {
         return Result.failure(
-          DatabaseError('Firestore REST upsertTask failed: ${response.statusCode} ${response.body}'),
+          classifyFirestoreRestError(
+            response.statusCode,
+            response.body,
+            operation: 'upsertTask',
+          ),
         );
       }
       _refreshNow(uid);
@@ -150,7 +159,11 @@ class RestRoutineRepositoryService implements RoutineRepositoryService {
           response.statusCode != 204 &&
           response.statusCode != 404) {
         return Result.failure(
-          DatabaseError('Firestore REST deleteTask failed: ${response.statusCode} ${response.body}'),
+          classifyFirestoreRestError(
+            response.statusCode,
+            response.body,
+            operation: 'deleteTask',
+          ),
         );
       }
       _refreshNow(uid);
@@ -186,8 +199,10 @@ class RestRoutineRepositoryService implements RoutineRepositoryService {
       );
       if (response.statusCode < 200 || response.statusCode >= 300) {
         return Result.failure(
-          DatabaseError(
-            'Firestore REST setTaskCompleted failed: ${response.statusCode} ${response.body}',
+          classifyFirestoreRestError(
+            response.statusCode,
+            response.body,
+            operation: 'setTaskCompleted',
           ),
         );
       }
