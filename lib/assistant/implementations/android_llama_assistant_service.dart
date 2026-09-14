@@ -10,15 +10,21 @@ import 'package:path_provider/path_provider.dart';
 
 /// [AssistantService] backed by a local Qwen3-1.7B GGUF model — same model
 /// as `murthy-voice`'s `llm.py` — run on-device via `llama_cpp_dart`'s
-/// isolate engine (CPU only: `gpuLayers: 0`).
+/// isolate-managed `LlamaParent`, CPU only (`nGpuLayers = 0`).
 ///
-/// **Unverified.** Written against `llama_cpp_dart` 0.2.2's source
-/// (`LlamaEngine`/`EngineChat`/`GenerationEvent` — the package went
-/// through breaking API changes in 0.2.0, and some published docs still
-/// show an older `LlamaParent`/`LlamaLoad` API), without a Flutter/Android
-/// toolchain available to actually build and run this. Confirm this
-/// compiles against whatever version resolves, and adjust class/method
-/// names if the installed API differs, before relying on it.
+/// Verified against `llama_cpp_dart` 0.2.2's actual published source (the
+/// package's pub.dev-hosted archive, read directly — its README/doc-comment
+/// examples turned out to lag the real API in places). `LlamaParent.stream`
+/// emits raw text chunks for whichever prompt is currently running;
+/// `LlamaParent.completions` emits one [CompletionEvent] per finished
+/// prompt, keyed by the prompt id `sendPrompt` returns.
+///
+/// Still unverified: this hasn't been built/run on an actual Android
+/// device (no Flutter/Android toolchain available), and `nGpuLayers = 0`'s
+/// CPU-only Android performance for a 1.7B model is untested — llama.cpp's
+/// Dart FFI binding itself compiles as part of the app's normal Android
+/// Gradle build (this package ships as a Flutter plugin with its own
+/// native module), not something handled here.
 ///
 /// Downloads the model (~1.1GB) into app support storage on first use —
 /// too large to bundle as a Flutter asset. Every call after that first
@@ -39,7 +45,12 @@ class AndroidLlamaAssistantService implements AssistantService {
       'plain sentences, no markdown, no bullet lists, no code blocks, since '
       'it will be read aloud by a text-to-speech voice.';
 
-  LlamaEngine? _engine;
+  LlamaParent? _parent;
+  // The protocol has no natural request queue of its own at this level
+  // (sendPrompt() itself queues internally, but stream/completions are
+  // shared across whatever prompt is currently in flight), so concurrent
+  // explain() calls are serialized the same way JsonLineProcess does it.
+  Future<void> _queue = Future.value();
 
   Future<String> _ensureModelDownloaded() async {
     final supportDir = await getApplicationSupportDirectory();
@@ -60,41 +71,56 @@ class AndroidLlamaAssistantService implements AssistantService {
     return modelPath;
   }
 
-  Future<LlamaEngine> _ensureEngine() async {
-    final existing = _engine;
+  Future<LlamaParent> _ensureParent() async {
+    final existing = _parent;
     if (existing != null) return existing;
     final modelPath = await _ensureModelDownloaded();
-    final engine = await LlamaEngine.spawn(
-      modelParams: ModelParams(path: modelPath, gpuLayers: 0),
-      contextParams: const ContextParams(nCtx: 4096),
+    final loadCommand = LlamaLoad(
+      path: modelPath,
+      modelParams: ModelParams()..nGpuLayers = 0,
+      contextParams: ContextParams()..nCtx = 4096,
+      samplingParams: SamplerParams(),
     );
-    _engine = engine;
-    return engine;
+    final parent = LlamaParent(loadCommand, ChatMLFormat());
+    await parent.init();
+    _parent = parent;
+    return parent;
   }
 
   @override
-  Future<Result<String>> explain(String topic) async {
+  Future<Result<String>> explain(String topic) {
+    final previous = _queue;
+    final result = previous.then((_) => _explainNow(topic));
+    _queue = result.then((_) {}, onError: (_) {});
+    return result;
+  }
+
+  Future<Result<String>> _explainNow(String topic) async {
     try {
-      final engine = await _ensureEngine();
-      final chat = await engine.createChat();
-      chat.addSystem(_systemPrompt);
-      // /no_think: Qwen3's documented switch to skip its reasoning trace
-      // and answer directly — see llm.py's module docstring for why.
-      chat.addUser('$topic /no_think');
+      final parent = await _ensureParent();
+      parent.messages = [
+        {'role': 'system', 'content': _systemPrompt},
+        // /no_think: Qwen3's documented switch to skip its reasoning trace
+        // and answer directly — see llm.py's module docstring for why.
+        {'role': 'user', 'content': '$topic /no_think'},
+      ];
 
       final buffer = StringBuffer();
-      await for (final event in chat.generate(maxTokens: 512)) {
-        switch (event) {
-          case TokenEvent(text: final text):
-            buffer.write(text);
-          case DoneEvent(trailingText: final trailing):
-            buffer.write(trailing);
-          default:
-            break;
+      final subscription = parent.stream.listen(buffer.write);
+      try {
+        final promptId = await parent.sendPrompt(topic);
+        final event = await parent.completions.firstWhere(
+          (e) => e.promptId == promptId,
+        );
+        if (!event.success) {
+          return Result.failure(
+            AssistantError(event.errorDetails ?? 'Generation failed.'),
+          );
         }
+        return Result.success(buffer.toString().trim());
+      } finally {
+        await subscription.cancel();
       }
-      await chat.dispose();
-      return Result.success(buffer.toString().trim());
     } catch (e, stackTrace) {
       return Result.failure(
         AssistantError(
@@ -108,11 +134,8 @@ class AndroidLlamaAssistantService implements AssistantService {
 
   @override
   Future<void> dispose() async {
-    // LlamaEngine's own shutdown method wasn't confirmed against the
-    // installed package version (see class doc comment) — dropping the
-    // reference here at minimum stops this service from reusing a stale
-    // engine, but may leak the isolate/model until process exit. Wire up
-    // the real dispose/shutdown call once confirmed.
-    _engine = null;
+    final parent = _parent;
+    _parent = null;
+    await parent?.dispose();
   }
 }

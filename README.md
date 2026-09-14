@@ -77,11 +77,12 @@ service-interface + implementation pattern used by `beyond_hire_sdk`.
     `MurthyAssistantConfig`'s doc comment for setup, and murthy-voice's
     README for why this is a subprocess rather than a native/FFI binding.
   - **Android** — `AndroidLlamaAssistantService` runs the same Qwen3-1.7B
-    GGUF model on-device via `llama_cpp_dart` (downloading it into app
-    support storage on first use), and `FlutterTtsVoiceService` uses the
-    OS's own TTS engine. **`AndroidLlamaAssistantService` is unverified** —
-    written against `llama_cpp_dart`'s source without a Flutter/Android
-    toolchain available to build and test it; see its doc comment.
+    GGUF model on-device via `llama_cpp_dart`'s `LlamaParent` (downloading
+    the model into app support storage on first use), and
+    `FlutterTtsVoiceService` uses the OS's own TTS engine. The Dart-level
+    API usage is checked against `llama_cpp_dart` 0.2.2's actual published
+    source; still unbuilt/unrun on a real device (no Flutter/Android
+    toolchain available here) — see the class's doc comment.
   No iOS/macOS/Windows implementation yet.
 
 ## Using it
