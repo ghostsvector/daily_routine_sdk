@@ -50,3 +50,9 @@ class QuotaError extends AppError {
 class UnknownError extends AppError {
   const UnknownError(super.message, {super.cause, super.stackTrace});
 }
+
+/// The local Murthy assistant/voice subprocess (see `lib/assistant/`)
+/// failed to start, crashed, or returned a malformed response.
+class AssistantError extends AppError {
+  const AssistantError(super.message, {super.cause, super.stackTrace});
+}

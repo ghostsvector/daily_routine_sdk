@@ -68,6 +68,14 @@ service-interface + implementation pattern used by `beyond_hire_sdk`.
   [Chrome extension](https://github.com/kasinadhsarma/daily-routine-activity-tracker)
   writes browser tab/video sessions into, so `watchRecentActivity` returns
   a combined feed across every device.
+- `assistant/` — `AssistantService` (explains a topic) and `VoiceService`
+  (speaks it) interfaces, plus `LinuxProcessAssistantService`/
+  `LinuxProcessVoiceService`: Linux-desktop-only implementations that drive
+  a local clone of [murthy-voice](https://github.com/ghostsvector/murthy-voice)
+  as a long-lived subprocess over stdin/stdout (no network socket) — see
+  `MurthyAssistantConfig`'s doc comment for setup, and murthy-voice's
+  README for why this is a subprocess rather than a native/FFI binding.
+  No Android/iOS/macOS/Windows implementation yet.
 
 ## Using it
 
