@@ -69,13 +69,21 @@ service-interface + implementation pattern used by `beyond_hire_sdk`.
   writes browser tab/video sessions into, so `watchRecentActivity` returns
   a combined feed across every device.
 - `assistant/` — `AssistantService` (explains a topic) and `VoiceService`
-  (speaks it) interfaces, plus `LinuxProcessAssistantService`/
-  `LinuxProcessVoiceService`: Linux-desktop-only implementations that drive
-  a local clone of [murthy-voice](https://github.com/ghostsvector/murthy-voice)
-  as a long-lived subprocess over stdin/stdout (no network socket) — see
-  `MurthyAssistantConfig`'s doc comment for setup, and murthy-voice's
-  README for why this is a subprocess rather than a native/FFI binding.
-  No Android/iOS/macOS/Windows implementation yet.
+  (speaks it) interfaces, with two implementation pairs:
+  - **Linux desktop** — `LinuxProcessAssistantService`/
+    `LinuxProcessVoiceService` drive a local clone of
+    [murthy-voice](https://github.com/ghostsvector/murthy-voice) as a
+    long-lived subprocess over stdin/stdout (no network socket) — see
+    `MurthyAssistantConfig`'s doc comment for setup, and murthy-voice's
+    README for why this is a subprocess rather than a native/FFI binding.
+  - **Android** — `AndroidLlamaAssistantService` runs the same Qwen3-1.7B
+    GGUF model on-device via `llama_cpp_dart`'s `LlamaParent` (downloading
+    the model into app support storage on first use), and
+    `FlutterTtsVoiceService` uses the OS's own TTS engine. The Dart-level
+    API usage is checked against `llama_cpp_dart` 0.2.2's actual published
+    source; still unbuilt/unrun on a real device (no Flutter/Android
+    toolchain available here) — see the class's doc comment.
+  No iOS/macOS/Windows implementation yet.
 
 ## Using it
 
