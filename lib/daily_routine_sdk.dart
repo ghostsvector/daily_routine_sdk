@@ -7,6 +7,8 @@ export 'activity/implementations/firestore_activity_repository_service.dart';
 
 export 'assistant/assistant_service.dart';
 export 'assistant/config/murthy_assistant_config.dart';
+export 'assistant/implementations/android_llama_assistant_service.dart';
+export 'assistant/implementations/flutter_tts_voice_service.dart';
 export 'assistant/implementations/linux_process_assistant_service.dart';
 export 'assistant/implementations/linux_process_voice_service.dart';
 export 'assistant/voice_service.dart';
