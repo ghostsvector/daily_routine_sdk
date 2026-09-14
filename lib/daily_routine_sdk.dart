@@ -5,6 +5,12 @@ library;
 export 'activity/activity_repository_service.dart';
 export 'activity/implementations/firestore_activity_repository_service.dart';
 
+export 'assistant/assistant_service.dart';
+export 'assistant/config/murthy_assistant_config.dart';
+export 'assistant/implementations/linux_process_assistant_service.dart';
+export 'assistant/implementations/linux_process_voice_service.dart';
+export 'assistant/voice_service.dart';
+
 export 'auth/auth_service.dart';
 export 'auth/implementations/firebase_auth_service.dart';
 
