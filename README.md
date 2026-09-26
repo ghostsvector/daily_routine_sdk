@@ -68,21 +68,29 @@ service-interface + implementation pattern used by `beyond_hire_sdk`.
   [Chrome extension](https://github.com/kasinadhsarma/daily-routine-activity-tracker)
   writes browser tab/video sessions into, so `watchRecentActivity` returns
   a combined feed across every device.
-- `assistant/` — `AssistantService` (explains a topic) and `VoiceService`
-  (speaks it) interfaces, with two implementation pairs:
+- `assistant/` — `AssistantService` (explains a topic), `VoiceService`
+  (speaks it), and `WakeWordService` ("Hey Murthy" — reports a wake
+  event, then the transcribed question) interfaces, with two
+  implementation trios:
   - **Linux desktop** — `LinuxProcessAssistantService`/
-    `LinuxProcessVoiceService` drive a local clone of
-    [murthy-voice](https://github.com/ghostsvector/murthy-voice) as a
-    long-lived subprocess over stdin/stdout (no network socket) — see
+    `LinuxProcessVoiceService`/`LinuxProcessWakeWordService` drive a local
+    clone of [murthy-voice](https://github.com/ghostsvector/murthy-voice)
+    as long-lived subprocesses over stdin/stdout (no network socket) — see
     `MurthyAssistantConfig`'s doc comment for setup, and murthy-voice's
     README for why this is a subprocess rather than a native/FFI binding.
+    The wake-word one needs a trained "Hey Murthy" model dropped into that
+    clone (see murthy-voice's README) or it falls back to a bundled
+    stand-in wake word.
   - **Android** — `AndroidLlamaAssistantService` runs the same Qwen3-1.7B
     GGUF model on-device via `llama_cpp_dart`'s `LlamaParent` (downloading
-    the model into app support storage on first use), and
-    `FlutterTtsVoiceService` uses the OS's own TTS engine. The Dart-level
-    API usage is checked against `llama_cpp_dart` 0.2.2's actual published
-    source; still unbuilt/unrun on a real device (no Flutter/Android
-    toolchain available here) — see the class's doc comment.
+    the model into app support storage on first use); `FlutterTtsVoiceService`
+    uses the OS's own TTS engine; `AndroidSpeechWakeWordService`
+    approximates "Hey Murthy" by running the OS speech recognizer
+    continuously and watching for the phrase, since there's no
+    Android/Flutter binding for a real wake-word engine. All three are
+    checked against their packages' actual published source, but still
+    unbuilt/unrun on a real device (no Flutter/Android toolchain available
+    here) — see each class's doc comment.
   No iOS/macOS/Windows implementation yet.
 
 ## Using it
