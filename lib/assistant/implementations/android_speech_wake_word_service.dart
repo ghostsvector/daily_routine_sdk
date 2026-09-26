@@ -46,9 +46,11 @@ class AndroidSpeechWakeWordService implements WakeWordService {
     if (!_running) return;
     _stt.listen(
       onResult: _onWakeResult,
-      listenFor: const Duration(seconds: 55),
-      pauseFor: const Duration(seconds: 5),
-      partialResults: true,
+      listenOptions: SpeechListenOptions(
+        listenFor: const Duration(seconds: 55),
+        pauseFor: const Duration(seconds: 5),
+        partialResults: true,
+      ),
     );
   }
 
@@ -63,9 +65,11 @@ class AndroidSpeechWakeWordService implements WakeWordService {
     if (!_running) return;
     _stt.listen(
       onResult: _onQueryResult,
-      listenFor: const Duration(seconds: 10),
-      pauseFor: const Duration(seconds: 2),
-      partialResults: false,
+      listenOptions: SpeechListenOptions(
+        listenFor: const Duration(seconds: 10),
+        pauseFor: const Duration(seconds: 2),
+        partialResults: false,
+      ),
     );
   }
 
