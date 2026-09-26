@@ -1,3 +1,23 @@
+## v0.2.0 — 2026-09-26
+
+- Update CHANGELOG.md for v0.1.11 [skip ci]
+- Update release workflow's commit-signing email after account rename
+- Reduce Linux desktop poll frequency to ease Firestore quota pressure
+- Remove background polling from Linux desktop REST backends entirely
+- Classify Firestore errors by HTTP status / error code instead of a blanket DatabaseError
+- Remove stale pollInterval param from REST routine repo cache test
+- Merge pull request #1 from ghostsvector/claude/fix-poll-interval-test
+- Add AssistantService/VoiceService (Murthy LLM + voice, Linux desktop)
+- Merge pull request #2 from ghostsvector/claude/assistant-service-linux
+- Add Android implementations of AssistantService/VoiceService
+- Fix AndroidLlamaAssistantService against llama_cpp_dart's real API
+- Merge pull request #3 from ghostsvector/claude/assistant-service-android
+- Add WakeWordService ("Hey Murthy") for Linux and Android
+- Fix deprecated_member_use lints in AndroidSpeechWakeWordService
+- Merge pull request #4 from ghostsvector/claude/wake-word
+- Bump version to 0.2.0
+- Merge pull request #5 from ghostsvector/claude/bump-version
+
 ## v0.1.11 — 2026-09-08
 
 - Update CHANGELOG.md for v0.1.10 [skip ci]
