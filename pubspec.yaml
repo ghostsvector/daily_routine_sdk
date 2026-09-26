@@ -28,6 +28,7 @@ dependencies:
   llama_cpp_dart: ^0.2.2
   flutter_tts: ^4.0.0
   path_provider: ^2.1.0
+  speech_to_text: ^7.0.0
 
 dev_dependencies:
   flutter_test:
